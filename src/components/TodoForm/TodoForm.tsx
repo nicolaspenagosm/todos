@@ -1,35 +1,40 @@
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { StyledTodoFrom } from "./TodoForm.styled";
 import { ROUTES } from "../../App";
-import { ITodo } from "../TodoList/TodoList";
-import {  useState } from "react";
+import { useMemo, useState } from "react";
+import { useAppDispatch } from "../../store";
+import { todoAction } from "../../store/todos-slice/slice";
+import { useSelector } from "react-redux";
+import { selectTodos } from "../../store/todos-slice/selectors";
+import { generateId } from "../../utils/id";
 
-const TodoForm: React.FC<{
-  todos?: ITodo[];
-  onAddTodo?: (todo: ITodo) => void;
-}> = ({ todos, onAddTodo }) => {
-  const location = useLocation();
-  const isEditing = location.pathname === ROUTES.edit;
-  const { index } = useParams<{ index: string }>();
+const TodoForm: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const todos = useSelector(selectTodos);
+  const { id } = useParams<{ id: string }>();
+  const index = useMemo(() => todos.findIndex((e) => e.id === id), [id, todos]);
+  const selectedTodo = index !== -1 ? todos[+index] : null;
+  const isEditing = selectedTodo === null;
 
-  let todo = null;
-  if (!isEditing) todo = todos![+index!];
+  const [title, setTitle] = useState(selectedTodo ? selectedTodo.title : "");
+  const [description, setDescription] = useState(
+    selectedTodo ? selectedTodo.description : ""
+  );
 
-  const [title, setTitle] = useState(todo&&todo.title||"");
-  const [description, setDescription] = useState(todo&&todo.description||"");
+  const handleSubmitForm = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    dispatch(
+      todoAction.addTodo({
+        id: generateId(),
+        title,
+        description,
+        date: Date.now(),
+      })
+    );
+  };
 
   return (
-    <StyledTodoFrom
-      onSubmit={(e) => {
-        e.preventDefault();
-
-        onAddTodo!({
-          title,
-          description,
-          date: Date.now(),
-        });
-      }}
-    >
+    <StyledTodoFrom onSubmit={handleSubmitForm}>
       <Link to={ROUTES.todos}>Go back</Link>
       <input
         disabled={!isEditing}
@@ -37,7 +42,7 @@ const TodoForm: React.FC<{
         name="title"
         placeholder="Title"
         value={title}
-        onChange={(e)=>setTitle(e.target.value)}
+        onChange={(e) => setTitle(e.target.value)}
       />
       <textarea
         disabled={!isEditing}
@@ -45,14 +50,14 @@ const TodoForm: React.FC<{
         name="description"
         placeholder="Description"
         value={description}
-        onChange={(e)=>setDescription(e.target.value)}
+        onChange={(e) => setDescription(e.target.value)}
       />
       {!isEditing && (
         <input
           id="date"
           name="date"
           disabled={true}
-          value={new Date(todo!.date).toLocaleString("en-us")}
+          value={new Date(selectedTodo!.date).toLocaleString("en-us")}
         />
       )}
       {isEditing && <button type="submit">Save</button>}
