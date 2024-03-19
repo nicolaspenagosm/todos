@@ -16,7 +16,7 @@ export const ROUTES = {
 };
 
 function App() {
-  //const [shouldRunEffect, setShouldRunEffect] = useState(false);
+ 
   const dispatch = useAppDispatch();
   const todos = useSelector(selectTodos);
 
